@@ -1,0 +1,9 @@
+services:
+  web:
+    image: weather-app
+    container_name: weather-container
+    build: .
+    env:
+      - logs: true
+    ports:
+      - "9393:80"
