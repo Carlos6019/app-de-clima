@@ -24,13 +24,36 @@ jobs:
     - name: Build Docker image
       run: docker build -t weather-app:latest .
 
-    - name: "🔍 ESCANEO COMPLETO DE SEGURIDAD - TODO EN UNA TABLA"
+    - name: "🔍 Vulnerabilidades"
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'weather-app:latest'
         format: 'table'
         exit-code: '0'
-        scanners: 'vuln,secret,config,license'
+        scanners: 'vuln'
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
         vuln-type: 'os,library'
-        list-all-pkgs: true
+
+    - name: "🔐 Secretos"
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'weather-app:latest'
+        format: 'table'
+        exit-code: '0'
+        scanners: 'secret'
+
+    - name: "⚙️ Configuraciones Docker"
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'weather-app:latest'
+        format: 'table'
+        exit-code: '0'
+        scanners: 'config'
+
+    - name: "📄 Licencias"
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'weather-app:latest'
+        format: 'table'
+        exit-code: '0'
+        scanners: 'license'
