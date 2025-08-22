@@ -5,6 +5,13 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   trivy-scan:
@@ -19,21 +26,7 @@ jobs:
       with:
         scan-type: 'fs'
         scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  docker-image-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+        format: 'table'
 
     - name: Build Docker image
       run: docker build -t weather-app:latest .
@@ -43,52 +36,4 @@ jobs:
       with:
         image-ref: 'weather-app:latest'
         format: 'table'
-        exit-code: '1'
-        ignore-unfixed: true
-        vuln-type: 'os,library'
-        severity: 'CRITICAL,HIGH'
-
-    - name: Run Trivy scanner and generate report
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'weather-app:latest'
-        format: 'json'
-        output: 'trivy-report.json'
-
-    - name: Upload Trivy scan report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: trivy-scan-report
-        path: trivy-report.json
-
-  comprehensive-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Run Trivy config scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'config'
-        scan-ref: '.'
-        format: 'table'
-        exit-code: '0'
-
-    - name: Run Trivy secret scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        scanners: 'secret'
-        format: 'table'
-        exit-code: '1'
-
-    - name: Scan public Docker image (ejemplo)
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'alpine:3.18'
-        format: 'table'
-        severity: 'HIGH,CRITICAL'
+        severity: 'CRITICAL,HIGH,MEDIUM'
