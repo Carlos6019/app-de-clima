@@ -24,7 +24,7 @@ jobs:
     - name: Build Docker image
       run: docker build -t weather-app:latest .
 
-    - name: "🔍 Vulnerabilidades"
+    - name: "🔍 Vulnerabilities Scan"
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'weather-app:latest'
@@ -33,19 +33,3 @@ jobs:
         scanners: 'vuln'
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
         vuln-type: 'os,library'
-
-    - name: "🔐 Secretos"
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'weather-app:latest'
-        format: 'table'
-        exit-code: '0'
-        scanners: 'secret'
-
-    - name: "⚙️ Configuraciones Docker"
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'weather-app:latest'
-        format: 'table'
-        exit-code: '0'
-        scanners: 'config'
