@@ -24,33 +24,32 @@ jobs:
     - name: Build Docker image
       run: docker build -t weather-app:latest .
 
-
     - name: Run Trivy vulnerability scanner (JSON)
-          uses: aquasecurity/trivy-action@master
-          with:
-            image-ref: weather-app:latest
-            format: 'json'
-            output: 'trivy-results.json'
-            severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-            vuln-type: 'os,library'
-    
-        - name: Run Trivy vulnerability scanner (Table)
-          uses: aquasecurity/trivy-action@master
-          with:
-            image-ref: weather-app:latest
-            format: 'table'
-            output: 'trivy-results.txt'
-            severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-            vuln-type: 'os,library'
-    
-        - name: Upload JSON report
-          uses: actions/upload-artifact@v4
-          with:
-            name: trivy-report-json
-            path: trivy-results.json
-    
-        - name: Upload table report
-          uses: actions/upload-artifact@v4
-          with:
-            name: trivy-report-table
-            path: trivy-results.txt        
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: weather-app:latest
+        format: 'json'
+        output: 'trivy-results.json'
+        severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+        vuln-type: 'os,library'
+
+    - name: Run Trivy vulnerability scanner (Table)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: weather-app:latest
+        format: 'table'
+        output: 'trivy-results.txt'
+        severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+        vuln-type: 'os,library'
+
+    - name: Upload JSON report
+      uses: actions/upload-artifact@v4
+      with:
+        name: trivy-report-json
+        path: trivy-results.json
+
+    - name: Upload table report
+      uses: actions/upload-artifact@v4
+      with:
+        name: trivy-report-table
+        path: trivy-results.txt
