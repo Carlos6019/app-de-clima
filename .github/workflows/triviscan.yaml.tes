@@ -1,4 +1,4 @@
-name: Security Scan with Trivy - Weather App
+name: Security Scan - Weather App
 
 on:
   push:
@@ -14,26 +14,75 @@ permissions:
   actions: read
 
 jobs:
-  trivy-scan:
+  trivy-complete-scan:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run Trivy vulnerability scanner in repo mode
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'table'
-
     - name: Build Docker image
       run: docker build -t weather-app:latest .
 
-    - name: Run Trivy vulnerability scanner on Docker image
+    - name: Run Trivy vulnerability scanner (JSON)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'weather-app:latest'
+        format: 'json'
+        output: 'trivy-results.json'
+        severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+        vuln-type: 'os,library'
+
+    - name: Run Trivy vulnerability scanner (Table format for readable output)
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'weather-app:latest'
         format: 'table'
-        severity: 'CRITICAL,HIGH,MEDIUM'
+        output: 'trivy-results.txt'
+        severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+        vuln-type: 'os,library'
+
+    - name: Upload JSON report
+      uses: actions/upload-artifact@v4
+      with:
+        name: trivy-report-json
+        path: trivy-results.json
+
+    - name: Upload table report
+      uses: actions/upload-artifact@v4
+      with:
+        name: trivy-report-table
+        path: trivy-results.txt
+
+    - name: Display vulnerabilities summary
+      run: |
+        echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "### Summary" >> $GITHUB_STEP_SUMMARY
+        
+        # Count vulnerabilities by severity
+        CRITICAL=$(grep -c "CRITICAL" trivy-results.txt || echo "0")
+        HIGH=$(grep -c "HIGH" trivy-results.txt || echo "0")
+        MEDIUM=$(grep -c "MEDIUM" trivy-results.txt || echo "0")
+        LOW=$(grep -c "LOW" trivy-results.txt || echo "0")
+        
+        echo "- **Critical**: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+        echo "- **High**: $HIGH" >> $GITHUB_STEP_SUMMARY
+        echo "- **Medium**: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+        echo "- **Low**: $LOW" >> $GITHUB_STEP_SUMMARY
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Top Critical and High Vulnerabilities" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        head -n 50 trivy-results.txt >> $GITHUB_STEP_SUMMARY || echo "No vulnerabilities found"
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
+    - name: Fail on critical vulnerabilities
+      run: |
+        CRITICAL=$(grep -c "CRITICAL" trivy-results.txt || echo "0")
+        if [ "$CRITICAL" -gt 0 ]; then
+          echo "❌ Found $CRITICAL critical vulnerabilities!"
+          echo "Please review and fix critical vulnerabilities before proceeding."
+          exit 1
+        else
+          echo "✅ No critical vulnerabilities found."
+        fi
