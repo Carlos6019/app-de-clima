@@ -16,7 +16,7 @@ permissions:
 jobs:
   trivy-complete-scan:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -24,18 +24,25 @@ jobs:
     - name: Build Docker image
       run: docker build -t weather-app:latest .
 
-    - name: "🔍 Vulnerabilities Scan"
-      uses: aquasecurity/trivy-action@master
+
+    - name: Vulnerabilities Scan
+      run: |
+        IMAGE_NAME="weather-app:latest"
+        # Escaneo JSON
+        trivy image --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --vuln-type os,library \
+          --format json --output trivy-results.json $IMAGE_NAME
+        # Escaneo HTML
+        trivy image --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --vuln-type os,library \
+          --format template --template "@contrib/html.tpl" --output trivy-results.html $IMAGE_NAME
+
+    - name: Upload JSON report
+      uses: actions/upload-artifact@v4
       with:
-        image-ref: 'weather-app:latest'
-        format: 'sarif'
-        exit-code: '0'
-        scanners: 'vuln'
-        severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-        vuln-type: 'os,library'
-        output: 'trivy-results.sarif'          
-          
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
+        name: trivy-report-json
+        path: trivy-results.json
+
+    - name: Upload HTML report
+      uses: actions/upload-artifact@v4
       with:
-        sarif_file: 'trivy-results.sarif'          
+        name: trivy-report-html
+        path: trivy-results.html
