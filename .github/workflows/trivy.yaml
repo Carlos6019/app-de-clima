@@ -33,13 +33,12 @@ jobs:
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
         vuln-type: 'os,library'
 
-    - name: Run Trivy vulnerability scanner (HTML)
+    - name: Run Trivy vulnerability scanner (Table format for readable output)
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'weather-app:latest'
-        format: 'template'
-        template: '@contrib/html.tpl'
-        output: 'trivy-results.html'
+        format: 'table'
+        output: 'trivy-results.txt'
         severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
         vuln-type: 'os,library'
 
@@ -49,8 +48,41 @@ jobs:
         name: trivy-report-json
         path: trivy-results.json
 
-    - name: Upload HTML report
+    - name: Upload table report
       uses: actions/upload-artifact@v4
       with:
-        name: trivy-report-html
-        path: trivy-results.html
+        name: trivy-report-table
+        path: trivy-results.txt
+
+    - name: Display vulnerabilities summary
+      run: |
+        echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "### Summary" >> $GITHUB_STEP_SUMMARY
+        
+        # Count vulnerabilities by severity
+        CRITICAL=$(grep -c "CRITICAL" trivy-results.txt || echo "0")
+        HIGH=$(grep -c "HIGH" trivy-results.txt || echo "0")
+        MEDIUM=$(grep -c "MEDIUM" trivy-results.txt || echo "0")
+        LOW=$(grep -c "LOW" trivy-results.txt || echo "0")
+        
+        echo "- **Critical**: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+        echo "- **High**: $HIGH" >> $GITHUB_STEP_SUMMARY
+        echo "- **Medium**: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+        echo "- **Low**: $LOW" >> $GITHUB_STEP_SUMMARY
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Top Critical and High Vulnerabilities" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        head -n 50 trivy-results.txt >> $GITHUB_STEP_SUMMARY || echo "No vulnerabilities found"
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
+    - name: Fail on critical vulnerabilities
+      run: |
+        CRITICAL=$(grep -c "CRITICAL" trivy-results.txt || echo "0")
+        if [ "$CRITICAL" -gt 0 ]; then
+          echo "❌ Found $CRITICAL critical vulnerabilities!"
+          echo "Please review and fix critical vulnerabilities before proceeding."
+          exit 1
+        else
+          echo "✅ No critical vulnerabilities found."
+        fi
